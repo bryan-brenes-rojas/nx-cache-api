@@ -1,18 +1,13 @@
 import {
   GetObjectCommand,
-  GetObjectCommandOutput,
   HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
-import {
-  ConflictException,
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { Readable } from 'stream';
+import { Response } from 'express';
 
 @Injectable()
 export class NxService {
@@ -47,10 +42,8 @@ export class NxService {
       );
     } catch (error: any) {
       if (error instanceof Error && error.name === 'NotFound') {
-        console.log('Object not found');
         exists = false;
       } else {
-        console.log('Error:', error);
         throw error;
       }
     }
@@ -70,37 +63,13 @@ export class NxService {
     return 'Successfully uploaded';
   }
 
-  async getCacheItem(hash: string): Promise<Buffer> {
+  async getCacheItem(hash: string, res: Response): Promise<void> {
     const command = new GetObjectCommand({
       Bucket: 'cache',
       Key: hash,
     });
-    let res: GetObjectCommandOutput;
-    try {
-      res = await this.s3Client.send(command);
-    } catch (error: unknown) {
-      if (error instanceof Error) {
-        console.error('Error message:', error.message);
-
-        const awsError = error as { name?: string; $metadata?: any };
-        const errorCode = awsError.$metadata?.httpStatusCode;
-        if (errorCode === 404) {
-          throw new NotFoundException(error.name);
-        }
-        throw new ForbiddenException();
-      } else {
-        throw new Error('Unknown error');
-      }
-    }
-    const bodyStream = res.Body as Readable;
-    return this.streamToBuffer(bodyStream);
-  }
-
-  private async streamToBuffer(stream: Readable): Promise<Buffer> {
-    const chunks: Buffer[] = [];
-    for await (const chunk of stream) {
-      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
-    }
-    return Buffer.concat(chunks);
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
+    const url = await getSignedUrl(this.s3Client, command, { expiresIn: 300 });
+    res.redirect(url);
   }
 }

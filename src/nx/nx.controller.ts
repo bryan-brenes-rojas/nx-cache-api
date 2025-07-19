@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Header, Param, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  Param,
+  Put,
+  Response,
+} from '@nestjs/common';
 import { NxService } from './nx.service';
 
 @Controller({ path: 'cache', version: '1' })
@@ -7,11 +15,12 @@ export class NxController {
 
   @Get(':hash')
   @Header('Content-Type', 'application/octet-stream')
-  async getCacheItem(@Param('hash') hash: string): Promise<Buffer> {
+  async getCacheItem(
+    @Param('hash') hash: string,
+    @Response() res: Response,
+  ): Promise<void> {
     console.log('get cache item', hash);
-    const rs = await this.nxService.getCacheItem(hash);
-    console.log(rs);
-    return rs;
+    return this.nxService.getCacheItem(hash, res as any);
   }
 
   @Put(':hash')
