@@ -9,6 +9,10 @@ import { ConflictException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Response } from 'express';
 
+// export NODE_TLS_REJECT_UNAUTHORIZED=0
+// export NX_SELF_HOSTED_REMOTE_CACHE_ACCESS_TOKEN=test
+// export NX_SELF_HOSTED_REMOTE_CACHE_SERVER=http://localhost:3000
+
 @Injectable()
 export class NxService {
   private s3Client: S3Client;
