@@ -12,6 +12,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { Readable } from 'stream';
 
 @Injectable()
 export class NxService {
@@ -36,6 +37,7 @@ export class NxService {
   }
 
   async putCacheItem(hash: string, body: Buffer): Promise<string> {
+    let exists = true;
     try {
       await this.s3Client.send(
         new HeadObjectCommand({
@@ -43,14 +45,18 @@ export class NxService {
           Key: hash,
         }),
       );
-
-      throw new ConflictException('Cannot override an existing record');
-    } catch (error: unknown) {
+    } catch (error: any) {
       if (error instanceof Error && error.name === 'NotFound') {
-        // Do nothing
+        console.log('Object not found');
+        exists = false;
       } else {
-        throw new Error('Internal server error');
+        console.log('Error:', error);
+        throw error;
       }
+    }
+
+    if (exists) {
+      throw new ConflictException('Cannot override an existing record');
     }
 
     await this.s3Client.send(
@@ -63,12 +69,8 @@ export class NxService {
 
     return 'Successfully uploaded';
   }
-  catch(error: unknown) {
-    console.error('Upload error:', error);
-    throw new Error('Internal server error');
-  }
 
-  async getCacheItem(hash: string): Promise<string> {
+  async getCacheItem(hash: string): Promise<Buffer> {
     const command = new GetObjectCommand({
       Bucket: 'cache',
       Key: hash,
@@ -90,7 +92,15 @@ export class NxService {
         throw new Error('Unknown error');
       }
     }
-    console.log(res);
-    return '';
+    const bodyStream = res.Body as Readable;
+    return this.streamToBuffer(bodyStream);
+  }
+
+  private async streamToBuffer(stream: Readable): Promise<Buffer> {
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) {
+      chunks.push(typeof chunk === 'string' ? Buffer.from(chunk) : chunk);
+    }
+    return Buffer.concat(chunks);
   }
 }
