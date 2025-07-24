@@ -72,7 +72,6 @@ export class NxService {
       Bucket: 'cache',
       Key: hash,
     });
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call
     const url = await getSignedUrl(this.s3Client, command, { expiresIn: 300 });
     res.redirect(url);
   }

@@ -100,7 +100,7 @@
           "403": {
             "description": "Access forbidden",
             "content": {
-              : {
+              "text/plain": {
                 "schema": {
                   "type": "string",
                   "description": "Error message provided to the Nx CLI user"

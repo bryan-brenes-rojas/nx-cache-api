@@ -3,6 +3,8 @@ import {
   Controller,
   Get,
   Header,
+  HttpCode,
+  HttpStatus,
   Param,
   Put,
   Response,
@@ -19,16 +21,15 @@ export class NxController {
     @Param('hash') hash: string,
     @Response() res: Response,
   ): Promise<void> {
-    console.log('get cache item', hash);
     return this.nxService.getCacheItem(hash, res as any);
   }
 
   @Put(':hash')
+  @HttpCode(HttpStatus.ACCEPTED)
   async putCacheItem(
     @Param('hash') hash: string,
     @Body() body: any,
   ): Promise<string> {
-    console.log('put cache item', hash);
     return this.nxService.putCacheItem(hash, body);
   }
 }
